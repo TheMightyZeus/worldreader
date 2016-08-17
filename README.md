@@ -1,2 +1,2 @@
-# worldreader
-Java utility for reading worldengine files and operating on their data
+# WorldReader
+Java utility for reading [WorldEngine](https://github.com/Mindwerks/worldengine) files and operating on their data.
