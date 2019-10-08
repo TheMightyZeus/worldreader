@@ -7660,7 +7660,8 @@ public final class WorldOuterClass {
 		 */
 		public static final class DoubleMatrixWithQuantiles extends GeneratedMessage implements
 				// @@protoc_insertion_point(message_implements:World.World.DoubleMatrixWithQuantiles)
-				DoubleMatrixWithQuantilesOrBuilder {
+				DoubleMatrixWithQuantilesOrBuilder,
+				DoubleMatrixOrBuilder {
 			public static final int QUANTILES_FIELD_NUMBER = 1;
 			public static final int ROWS_FIELD_NUMBER = 2;
 			private static final DoubleMatrixWithQuantiles defaultInstance;

@@ -14,11 +14,10 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class Main {
-	private static final String PATH_ROOT = "C:\\software\\apps\\worldengine\\worlds\\";
-	private static void createImage(String path, WorldOuterClass.World.DoubleMatrix data) throws IOException {
+	private static void createImage(String path, WorldOuterClass.World.DoubleMatrixOrBuilder data) throws IOException {
 		createImage(path, data, ColorCalculator.DEFAULT);
 	}
-	private static void createImage(String path, WorldOuterClass.World.DoubleMatrix data, ColorCalculator calc) throws IOException {
+	private static void createImage(String path, WorldOuterClass.World.DoubleMatrixOrBuilder data, ColorCalculator calc) throws IOException {
 		DoubleHolder min = new DoubleHolder(Double.MAX_VALUE);
 		DoubleHolder max = new DoubleHolder(Double.MIN_VALUE);
 		data.getRowsList().stream().flatMap(d -> d.getCellsList().stream()).forEach(d -> {
@@ -39,7 +38,7 @@ public class Main {
 		}
 		ImageIO.write(bim, "png", new File(path));
 	}
-	private static void getDistribution(WorldOuterClass.World.DoubleMatrix data, int precision) {
+	private static void getDistribution(WorldOuterClass.World.DoubleMatrixOrBuilder data, int precision) {
 		DoubleHolder min = new DoubleHolder(Double.MAX_VALUE);
 		DoubleHolder max = new DoubleHolder(Double.MIN_VALUE);
 		IntHolder minInt = new IntHolder();
@@ -98,9 +97,21 @@ public class Main {
 		processFile(fileName, fileName.endsWith(".world") ? fileName.substring(0, fileName.length() - 6) : fileName);
 	}
 	private static void processFile(String fileName, String baseFileName) {
+		boolean needed = false;
+		// Just because loading large world files is very slow.
+		for(String nm : new String[]{"height", "temp", "rain", "rivers", "lakes"}) {
+			if(!new File(baseFileName + "-" + nm + ".png").exists()) {
+				needed = true;
+				break;
+			}
+		}
+		if(!needed) {
+			return;
+		}
 		WorldOuterClass.World world;
 		try (FileInputStream fis = new FileInputStream(new File(fileName))) {
 			CodedInputStream cis = CodedInputStream.newInstance(fis);
+			cis.setSizeLimit(Integer.MAX_VALUE);
 			world = WorldOuterClass.World.parseFrom(cis);
 		} catch (IOException e) {
 			System.err.println("An error occurred: " + e.getMessage());
@@ -108,15 +119,31 @@ public class Main {
 		}
 		//getDistribution(world.getPrecipitationData(), 10);
 		try {
-			createImage(baseFileName + "-height.png", world.getHeightMapData());
-			createImage(baseFileName + "-rain.png", world.getPrecipitationData());
-			createImage(baseFileName + "-temp.png", world.getTemperatureData());
-			createImage(baseFileName + "-rivers.png", world.getRivermap(), (value, minValue, maxValue) -> {
-				if(value == 0) {
-					return 0;
-				}
-				return ColorCalculator.DEFAULT.getColorForValue(value, minValue, maxValue) | 255;
-			});
+			if(!new File(baseFileName + "-height.png").exists()) {
+				createImage(baseFileName + "-height.png", world.getHeightMapData());
+			}
+			if(!new File(baseFileName + "-rain.png").exists()) {
+				createImage(baseFileName + "-rain.png", world.getPrecipitationData());
+			}
+			if(!new File(baseFileName + "-temp.png").exists()) {
+				createImage(baseFileName + "-temp.png", world.getTemperatureData());
+			}
+			if(!new File(baseFileName + "-rivers.png").exists()) {
+				createImage(baseFileName + "-rivers.png", world.getRivermap(), (value, minValue, maxValue) -> {
+					if(value == 0) {
+						return 0;
+					}
+					return ColorCalculator.DEFAULT.getColorForValue(value, minValue, maxValue) | 255;
+				});
+			}
+			if(!new File(baseFileName + "-lakes.png").exists()) {
+				createImage(baseFileName + "-lakes.png", world.getLakemap(), (value, minValue, maxValue) -> {
+					if(value == 0) {
+						return 0;
+					}
+					return ColorCalculator.DEFAULT.getColorForValue(value, minValue, maxValue) | 255;
+				});
+			}
 		} catch (IOException e) {
 			System.err.println("An error occurred: " + e.getMessage());
 		}
